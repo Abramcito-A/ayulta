@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+@import './ayulta.css';
+
+@source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
+
+/*
+ * Official AYULTA palette exposed to Tailwind utilities.
+ * The full design system (variables + components) lives in ayulta.css.
+ */
+@theme {
+    --color-primary: #00a8e8;
+    --color-secondary: #33c4f0;
+    --color-background: #e6f8ff;
+    --color-surface: #ffffff;
+    --color-text: #0f172a;
+    --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
