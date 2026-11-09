@@ -1,0 +1,49 @@
+# Rendered at container start by docker/entrypoint.sh (envsubst ${PORT}).
+server {
+    listen 0.0.0.0:${PORT} default_server;
+    listen [::]:${PORT} default_server;
+    server_name _;
+
+    # Only the public directory is exposed.
+    root /var/www/html/public;
+    index index.php;
+    charset utf-8;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Hashed Vite assets never change: cache them for a long time.
+    location /build/ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    location /images/ {
+        try_files $uri =404;
+        expires 30d;
+        access_log off;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+        fastcgi_read_timeout 60s;
+    }
+
+    # Never serve dotfiles (.env, .git, …).
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}

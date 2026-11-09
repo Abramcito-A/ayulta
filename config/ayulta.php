@@ -12,8 +12,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | AYULTA uses a simulated sign-in. This account always exists and is not a
-    | real security mechanism. Registered demo users are stored in a private
-    | JSON file (see App\Support\DemoUserStore) with hashed passwords.
+    | real security mechanism. Registered demo users are stored with hashed
+    | passwords in a private JSON file ("file") or, on hosts with an ephemeral
+    | filesystem, in an encrypted browser cookie ("cookie").
     |
     */
 
@@ -23,7 +24,11 @@ return [
         'password' => 'ayulta123',
     ],
 
+    'demo_users_driver' => env('DEMO_USERS_DRIVER', 'file'),
+
     'demo_users_path' => 'demo/users.json',
+
+    'demo_users_cookie' => 'ayulta_demo_accounts',
 
     /*
     |--------------------------------------------------------------------------

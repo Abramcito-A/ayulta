@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Middleware\ApplyRememberedSessionLifetime;
 use App\Support\DemoUserStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -108,6 +110,8 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        Cookie::queue(Cookie::forget(ApplyRememberedSessionLifetime::COOKIE));
+
         return redirect()->route('login')->with('success', 'Cerraste tu sesión. ¡Vuelve pronto!');
     }
 
@@ -119,8 +123,8 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $request->session()->put('demo_user', [...$user, 'remember' => $remember]);
 
-        if ($remember) {
-            config(['session.lifetime' => config('session.remember_lifetime')]);
-        }
+        Cookie::queue($remember
+            ? Cookie::make(ApplyRememberedSessionLifetime::COOKIE, '1', (int) config('session.remember_lifetime'))
+            : Cookie::forget(ApplyRememberedSessionLifetime::COOKIE));
     }
 }

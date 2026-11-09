@@ -1,0 +1,62 @@
+# Secrets and local environment — never part of the image
+.env
+.env.*
+!.env.example
+*.key
+auth.json
+
+# Version control and editor/agent folders
+.git
+.gitignore
+.gitattributes
+.github
+.idea
+.vscode
+.cursor
+.codex
+.claude
+.ai
+.phpactor.json
+*.swp
+.DS_Store
+Thumbs.db
+
+# Dependencies (rebuilt inside Docker)
+node_modules
+vendor
+
+# Front-end build output and dev-server marker (rebuilt in Docker)
+public/build
+public/hot
+public/storage
+public/fonts-manifest.dev.json
+
+# Runtime data, caches, logs and local backups
+storage/backups
+storage/logs/*
+storage/pail
+storage/app/private/*
+storage/app/public/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/testing/*
+storage/framework/views/*
+bootstrap/cache/*.php
+database/*.sqlite
+*.log
+
+# Tests and tooling not needed in production
+tests
+phpunit.xml
+.phpunit.result.cache
+.phpunit.cache
+coverage
+boost.json
+AGENTS.md
+CLAUDE.md
+README.md
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+docker-compose*.yml

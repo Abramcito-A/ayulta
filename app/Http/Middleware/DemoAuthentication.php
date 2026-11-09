@@ -22,10 +22,6 @@ class DemoAuthentication
                 ->with('success', 'Inicia sesión para continuar con tu aprendizaje.');
         }
 
-        if ($request->session()->get('demo_user.remember')) {
-            config(['session.lifetime' => config('session.remember_lifetime')]);
-        }
-
         View::share('currentUser', $request->session()->get('demo_user'));
 
         return $next($request);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApplyRememberedSessionLifetime;
 use App\Http\Middleware\DemoAuthentication;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -13,6 +14,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Render (and Cloudflare, if used) terminate HTTPS in front of the container.
+        $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_FOR
+            | Request::HEADER_X_FORWARDED_HOST
+            | Request::HEADER_X_FORWARDED_PORT
+            | Request::HEADER_X_FORWARDED_PROTO);
+
+        // Only extends the visitor's own session lifetime, so it does not need encryption.
+        $middleware->encryptCookies(except: [ApplyRememberedSessionLifetime::COOKIE]);
+        $middleware->web(prepend: [ApplyRememberedSessionLifetime::class]);
+
         $middleware->alias([
             'demo.auth' => DemoAuthentication::class,
         ]);

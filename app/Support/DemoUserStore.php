@@ -2,16 +2,35 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Stores demonstration accounts in a private JSON file (storage/app/private).
- * This is NOT a secure authentication system; it only simulates one.
+ * Stores demonstration accounts. This is NOT a secure authentication system.
+ *
+ * Drivers (config "ayulta.demo_users_driver"):
+ * - "file": private JSON file in storage/app/private (local development).
+ * - "cookie": encrypted cookie in the visitor's browser, for hosts with an
+ *   ephemeral filesystem such as Render's free plan. Accounts then exist only
+ *   in the browser where they were created.
+ *
+ * Passwords are always hashed with Laravel's Hash facade.
  */
 class DemoUserStore
 {
+    private const MAX_COOKIE_ACCOUNTS = 5;
+
+    private const COOKIE_MINUTES = 60 * 24 * 365;
+
+    /**
+     * Accounts created during the current request (cookie driver).
+     *
+     * @var array<string, array{name: string, password: string, created_at?: string}>|null
+     */
+    private ?array $pendingAccounts = null;
+
     /**
      * @return array{name: string, email: string, is_demo: bool}|null
      */
@@ -56,12 +75,34 @@ class DemoUserStore
             'created_at' => now()->toIso8601String(),
         ];
 
+        $this->save($accounts);
+
+        return ['name' => trim($name), 'email' => $email, 'is_demo' => false];
+    }
+
+    private function usesCookie(): bool
+    {
+        return config('ayulta.demo_users_driver') === 'cookie';
+    }
+
+    /**
+     * @param  array<string, array{name: string, password: string, created_at?: string}>  $accounts
+     */
+    private function save(array $accounts): void
+    {
+        if ($this->usesCookie()) {
+            $accounts = array_slice($accounts, -self::MAX_COOKIE_ACCOUNTS, null, true);
+            $this->pendingAccounts = $accounts;
+
+            Cookie::queue(config('ayulta.demo_users_cookie'), json_encode($accounts, JSON_UNESCAPED_UNICODE), self::COOKIE_MINUTES);
+
+            return;
+        }
+
         Storage::disk('local')->put(
             config('ayulta.demo_users_path'),
             json_encode($accounts, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
         );
-
-        return ['name' => trim($name), 'email' => $email, 'is_demo' => false];
     }
 
     /**
@@ -69,14 +110,17 @@ class DemoUserStore
      */
     private function all(): array
     {
-        $disk = Storage::disk('local');
-        $path = config('ayulta.demo_users_path');
-
-        if (! $disk->exists($path)) {
-            return [];
+        if ($this->usesCookie()) {
+            $raw = $this->pendingAccounts !== null
+                ? json_encode($this->pendingAccounts)
+                : request()->cookie(config('ayulta.demo_users_cookie'));
+        } else {
+            $disk = Storage::disk('local');
+            $path = config('ayulta.demo_users_path');
+            $raw = $disk->exists($path) ? $disk->get($path) : null;
         }
 
-        $accounts = json_decode((string) $disk->get($path), true);
+        $accounts = is_string($raw) ? json_decode($raw, true) : null;
 
         return is_array($accounts) ? $accounts : [];
     }
